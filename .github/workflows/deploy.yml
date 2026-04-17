@@ -22,5 +22,4 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ~/public_html/wp-content
-            git pull origin main
+            exit 0
