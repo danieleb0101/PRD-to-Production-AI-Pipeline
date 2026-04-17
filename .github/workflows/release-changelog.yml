@@ -42,8 +42,8 @@ jobs:
             -H "Authorization: Bearer $GH_TOKEN" \
             "https://api.github.com/repos/$REPO/commits/$SHA/pulls")
 
-          PR_NUMBER=$(echo "$PRS_JSON" | jq -r '.[0].number')
-          PR_BRANCH=$(echo "$PRS_JSON" | jq -r '.[0].head.ref')
+          PR_NUMBER=$(echo "$PRS_JSON" | jq -r 'max_by(.number) | .number')
+          PR_BRANCH=$(echo "$PRS_JSON" | jq -r 'max_by(.number) | .head.ref')
 
           if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
             echo "No PR associated with commit $SHA"
