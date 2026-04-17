@@ -52,13 +52,13 @@ Add the following in **Repository → Settings → Secrets and variables → Act
 
 ## Skills
 
-Skills are instruction files that guide Claude through each pipeline step. They live in `skills/` and are invoked by referencing them in your Claude session (Claude.ai or Claude Code).
+Skills are instruction files that guide Claude through each pipeline step. Each skill is available as a Claude Code slash command (loaded from `.claude/commands/`) and as a human-readable reference (in `skills/`).
 
 ### Prerequisites for each session
 
 1. Ensure the Atlassian and GitHub MCP connectors are active
-2. Include the relevant context files listed under each skill (paste content or attach file)
-3. Invoke the skill as shown
+2. Open this project in Claude Code (so slash commands are available)
+3. Include the relevant context files listed under each skill (paste content or attach file)
 
 ---
 
@@ -69,9 +69,9 @@ Turns a raw product idea into a structured PRD and saves it to Confluence.
 **Context to include:**
 - [`skills/create-prd/context/company.md`](skills/create-prd/context/company.md) — company profile, audience, and product philosophy
 
-**How to invoke:**
+**How to invoke (Claude Code):**
 ```
-Use the create-prd skill.
+/create-prd
 
 [Paste company.md content here]
 
@@ -89,9 +89,9 @@ Reads a PRD and creates a Jira Epic with INVEST-compliant stories.
 **Context to include:**
 - [`skills/prd-to-backlog/context/tech-stack.md`](skills/prd-to-backlog/context/tech-stack.md) — platform architecture, plugins, and constraints
 
-**How to invoke:**
+**How to invoke (Claude Code):**
 ```
-Use the prd-to-backlog skill.
+/prd-to-backlog
 
 [Paste tech-stack.md content here]
 
@@ -109,9 +109,9 @@ Implements a single Jira story end-to-end: branch, code, PR, and Jira status upd
 **Context to include:**
 - [`skills/story-implementation/context/tech-stack.md`](skills/story-implementation/context/tech-stack.md) — stack, plugins, and development constraints
 
-**How to invoke:**
+**How to invoke (Claude Code):**
 ```
-Use the story-implementation skill.
+/story-implementation
 
 [Paste tech-stack.md content here]
 
