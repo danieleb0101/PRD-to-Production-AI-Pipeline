@@ -1,0 +1,227 @@
+name: Close Jira story after prod deploy
+
+on:
+  workflow_run:
+    workflows: ["Deploy to Production"]
+    types:
+      - completed
+
+jobs:
+  close-jira:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: read
+      issues: write
+
+    steps:
+      - name: Guard - only continue for main
+        shell: bash
+        run: |
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
+          echo "workflow_run.head_branch=$BRANCH"
+
+          if [ "$BRANCH" != "main" ]; then
+            echo "Not a main deployment, exiting."
+            exit 0
+          fi
+
+      - name: Resolve deployed commit SHA
+        id: sha
+        shell: bash
+        run: |
+          SHA="${{ github.event.workflow_run.head_sha }}"
+          if [ -z "$SHA" ]; then
+            echo "No head SHA found on workflow_run payload"
+            exit 1
+          fi
+
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Find PR associated with deployed commit
+        id: pr_from_commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ steps.sha.outputs.sha }}
+        shell: bash
+        run: |
+          PRS_JSON=$(curl --silent --show-error --fail \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/$REPO/commits/$SHA/pulls")
+
+          PR_NUMBER=$(echo "$PRS_JSON" | jq -r '.[0].number')
+          PR_BRANCH=$(echo "$PRS_JSON" | jq -r '.[0].head.ref')
+
+          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
+            echo "No PR associated with commit $SHA"
+            echo "$PRS_JSON"
+            exit 1
+          fi
+
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "pr_branch=$PR_BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Extract Jira key from PR branch
+        id: extract_jira
+        shell: bash
+        run: |
+          BRANCH="${{ steps.pr_from_commit.outputs.pr_branch }}"
+          ISSUE_KEY=$(echo "$BRANCH" | grep -oE '[A-Z][A-Z0-9]+-[0-9]+' | head -n 1)
+
+          if [ -z "$ISSUE_KEY" ]; then
+            echo "No Jira issue key found in PR branch name: $BRANCH"
+            exit 1
+          fi
+
+          echo "issue_key=$ISSUE_KEY" >> "$GITHUB_OUTPUT"
+
+      - name: Read Jira issue status
+        id: jira_status
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          ISSUE_KEY: ${{ steps.extract_jira.outputs.issue_key }}
+        shell: bash
+        run: |
+          ISSUE_JSON=$(curl --silent --show-error --fail \
+            --request GET \
+            --url "$JIRA_BASE_URL/rest/api/3/issue/$ISSUE_KEY?fields=status" \
+            --user "$JIRA_EMAIL:$JIRA_API_TOKEN" \
+            --header "Accept: application/json")
+
+          STATUS_NAME=$(echo "$ISSUE_JSON" | jq -r '.fields.status.name')
+          STATUS_CATEGORY=$(echo "$ISSUE_JSON" | jq -r '.fields.status.statusCategory.key')
+
+          echo "status_name=$STATUS_NAME" >> "$GITHUB_OUTPUT"
+          echo "status_category=$STATUS_CATEGORY" >> "$GITHUB_OUTPUT"
+
+      - name: Get available Jira transitions
+        if: ${{ steps.jira_status.outputs.status_category != 'done' }}
+        id: transitions
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          ISSUE_KEY: ${{ steps.extract_jira.outputs.issue_key }}
+        shell: bash
+        run: |
+          curl --silent --show-error --fail \
+            --request GET \
+            --url "$JIRA_BASE_URL/rest/api/3/issue/$ISSUE_KEY/transitions" \
+            --user "$JIRA_EMAIL:$JIRA_API_TOKEN" \
+            --header "Accept: application/json" \
+            > transitions.json
+
+          TRANSITION_ID=$(jq -r '.transitions[] | select(.name == "Done") | .id' transitions.json | head -n 1)
+
+          if [ -z "$TRANSITION_ID" ] || [ "$TRANSITION_ID" = "null" ]; then
+            TRANSITION_ID=$(jq -r '.transitions[] | select(.name == "Closed") | .id' transitions.json | head -n 1)
+          fi
+
+          if [ -z "$TRANSITION_ID" ] || [ "$TRANSITION_ID" = "null" ]; then
+            TRANSITION_ID=$(jq -r '.transitions[] | select(.to.statusCategory.key == "done") | .id' transitions.json | head -n 1)
+          fi
+
+          if [ -z "$TRANSITION_ID" ] || [ "$TRANSITION_ID" = "null" ]; then
+            echo "Could not find a done-like transition for $ISSUE_KEY"
+            cat transitions.json
+            exit 1
+          fi
+
+          echo "transition_id=$TRANSITION_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Transition Jira issue
+        if: ${{ steps.jira_status.outputs.status_category != 'done' }}
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          ISSUE_KEY: ${{ steps.extract_jira.outputs.issue_key }}
+          TRANSITION_ID: ${{ steps.transitions.outputs.transition_id }}
+        shell: bash
+        run: |
+          curl --silent --show-error --fail \
+            --request POST \
+            --url "$JIRA_BASE_URL/rest/api/3/issue/$ISSUE_KEY/transitions" \
+            --user "$JIRA_EMAIL:$JIRA_API_TOKEN" \
+            --header "Accept: application/json" \
+            --header "Content-Type: application/json" \
+            --data "{
+              \"transition\": {
+                \"id\": \"$TRANSITION_ID\"
+              }
+            }"
+
+      - name: Build Jira URL
+        id: jira_url
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          ISSUE_KEY: ${{ steps.extract_jira.outputs.issue_key }}
+        shell: bash
+        run: |
+          echo "url=$JIRA_BASE_URL/browse/$ISSUE_KEY" >> "$GITHUB_OUTPUT"
+
+      - name: Comment on PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr_from_commit.outputs.pr_number }}
+          ISSUE_KEY: ${{ steps.extract_jira.outputs.issue_key }}
+          JIRA_URL: ${{ steps.jira_url.outputs.url }}
+        shell: bash
+        run: |
+          BODY=$(jq -n \
+            --arg key "$ISSUE_KEY" \
+            --arg url "$JIRA_URL" \
+            '{
+              body: ("Production deployment completed successfully.\n\nJira issue: [" + $key + "](" + $url + ")")
+            }')
+
+          curl --silent --show-error --fail \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/$REPO/issues/$PR_NUMBER/comments" \
+            -d "$BODY"
+
+      - name: Create release tag
+        id: release_meta
+        shell: bash
+        run: |
+          TAG="prod-$(date -u +'%Y%m%d-%H%M%S')"
+          TITLE="Production deploy $(date -u +'%Y-%m-%d %H:%M UTC')"
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "title=$TITLE" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release with generated notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ steps.release_meta.outputs.tag }}
+          TITLE: ${{ steps.release_meta.outputs.title }}
+          SHA: ${{ steps.sha.outputs.sha }}
+        shell: bash
+        run: |
+          BODY=$(jq -n \
+            --arg tag "$TAG" \
+            --arg name "$TITLE" \
+            --arg sha "$SHA" \
+            '{
+              tag_name: $tag,
+              target_commitish: $sha,
+              name: $name,
+              generate_release_notes: true
+            }')
+
+          curl --silent --show-error --fail \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/$REPO/releases" \
+            -d "$BODY"
