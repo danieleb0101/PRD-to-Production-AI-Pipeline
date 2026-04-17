@@ -8,7 +8,7 @@ Fully automated through **Claude** orchestration:
 - **Story implementation and status tracking** (`story-implementation` skill)
 - **Release and changelog generation** (GitHub Actions)
 
-https://github.com/user-attachments/assets/5fbf65ba-1a56-42b3-b449-a81b3e0ea4c6
+<img src="https://github.com/user-attachments/assets/5fbf65ba-1a56-42b3-b449-a81b3e0ea4c6" />
 
 ## Pipeline Overview
 
