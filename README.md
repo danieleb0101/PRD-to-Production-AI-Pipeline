@@ -1,7 +1,7 @@
 # PRD-to-Production-Pipeline
 
 **An AI-powered delivery pipeline that takes a product idea to production in minutes. No code required.**
-<img src="https://github.com/user-attachments/assets/5fbf65ba-1a56-42b3-b449-a81b3e0ea4c6" width="200" />
+<img src="https://github.com/user-attachments/assets/5fbf65ba-1a56-42b3-b449-a81b3e0ea4c6" width="400" align="left" />
 
 Fully automated through **Claude** orchestration:
 - **PRD creation in Confluence** (`create-prd` skill)
