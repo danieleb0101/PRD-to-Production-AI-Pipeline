@@ -77,14 +77,11 @@ The context files (`company.md`, `tech-stack.md`) are bundled inside each `.skil
 
 Turns a raw product idea into a structured PRD and saves it to Confluence.
 
-**Context to include:**
-- [`skills/create-prd/context/company.md`](skills/create-prd/context/company.md) — company profile, audience, and product philosophy
+**Bundled context:** [`skills/create-prd/context/company.md`](skills/create-prd/context/company.md) — company profile, audience, and product philosophy. Included automatically via the `.skill` file.
 
 **How to invoke (Claude Code):**
 ```
 /create-prd
-
-[Paste company.md content here]
 
 Feature idea: <describe your idea>
 ```
@@ -97,14 +94,11 @@ Feature idea: <describe your idea>
 
 Reads a PRD and creates a Jira Epic with INVEST-compliant stories.
 
-**Context to include:**
-- [`skills/prd-to-backlog/context/tech-stack.md`](skills/prd-to-backlog/context/tech-stack.md) — platform architecture, plugins, and constraints
+**Bundled context:** [`skills/prd-to-backlog/context/tech-stack.md`](skills/prd-to-backlog/context/tech-stack.md) — platform architecture, plugins, and constraints. Included automatically via the `.skill` file.
 
 **How to invoke (Claude Code):**
 ```
 /prd-to-backlog
-
-[Paste tech-stack.md content here]
 
 PRD: <link to Confluence page, or paste PRD content>
 ```
@@ -117,14 +111,11 @@ PRD: <link to Confluence page, or paste PRD content>
 
 Implements a single Jira story end-to-end: branch, code, PR, and Jira status updates.
 
-**Context to include:**
-- [`skills/story-implementation/context/tech-stack.md`](skills/story-implementation/context/tech-stack.md) — stack, plugins, and development constraints
+**Bundled context:** [`skills/story-implementation/context/tech-stack.md`](skills/story-implementation/context/tech-stack.md) — stack, plugins, and development constraints. Included automatically via the `.skill` file.
 
 **How to invoke (Claude Code):**
 ```
 /story-implementation
-
-[Paste tech-stack.md content here]
 
 Story: <Jira issue key or link, e.g. VLM-42>
 ```
