@@ -1,4 +1,4 @@
-name: Close Jira story after prod deploy
+name: Close story and create release changelog
 
 on:
   workflow_run:
