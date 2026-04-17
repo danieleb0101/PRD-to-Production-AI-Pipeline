@@ -8,7 +8,7 @@ on:
 
 jobs:
   close-jira:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
     runs-on: ubuntu-latest
 
     permissions:
@@ -17,17 +17,6 @@ jobs:
       issues: write
 
     steps:
-      - name: Guard - only continue for main
-        shell: bash
-        run: |
-          BRANCH="${{ github.event.workflow_run.head_branch }}"
-          echo "workflow_run.head_branch=$BRANCH"
-
-          if [ "$BRANCH" != "main" ]; then
-            echo "Not a main deployment, exiting."
-            exit 0
-          fi
-
       - name: Resolve deployed commit SHA
         id: sha
         shell: bash
