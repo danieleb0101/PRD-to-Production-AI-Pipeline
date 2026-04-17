@@ -41,9 +41,6 @@ Add the following in **Repository → Settings → Secrets and variables → Act
 
 | Name | Description |
 |---|---|
-| `SSH_HOST` | Production server hostname |
-| `SSH_USER` | SSH username |
-| `SSH_PRIVATE_KEY` | SSH private key for deployment |
 | `JIRA_BASE_URL` | e.g. `https://yourcompany.atlassian.net` |
 | `JIRA_EMAIL` | Jira account email |
 | `JIRA_API_TOKEN` | Jira API token ([generate here](https://id.atlassian.com/manage-profile/security/api-tokens)) |
@@ -142,9 +139,9 @@ Two workflows automate the post-merge delivery loop. No manual steps required af
 
 ### [`deploy.yml`](.github/workflows/deploy.yml) — Deploy to Production
 
-Triggers on push to `main`. Connects to the production server via SSH and pulls the latest code.
+Triggers on push to `main`. This workflow is a **sample placeholder** — replace the deploy step with your own target (SSH, cloud provider, container registry, etc.).
 
-Required secrets: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`
+> No secrets are required by the sample. Add the secrets your own deployment method needs.
 
 ### [`release-changelog.yml`](.github/workflows/release-changelog.yml) — Close Jira + Create Release
 
