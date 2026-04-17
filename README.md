@@ -41,9 +41,6 @@ Add the following in **Repository → Settings → Secrets and variables → Act
 
 | Name | Description |
 |---|---|
-| `SSH_HOST` | Production server hostname |
-| `SSH_USER` | SSH username |
-| `SSH_PRIVATE_KEY` | SSH private key for deployment |
 | `JIRA_BASE_URL` | e.g. `https://yourcompany.atlassian.net` |
 | `JIRA_EMAIL` | Jira account email |
 | `JIRA_API_TOKEN` | Jira API token ([generate here](https://id.atlassian.com/manage-profile/security/api-tokens)) |
@@ -80,14 +77,11 @@ The context files (`company.md`, `tech-stack.md`) are bundled inside each `.skil
 
 Turns a raw product idea into a structured PRD and saves it to Confluence.
 
-**Context to include:**
-- [`skills/create-prd/context/company.md`](skills/create-prd/context/company.md) — company profile, audience, and product philosophy
+**Bundled context:** [`skills/create-prd/context/company.md`](skills/create-prd/context/company.md) — company profile, audience, and product philosophy. Included automatically via the `.skill` file.
 
 **How to invoke (Claude Code):**
 ```
 /create-prd
-
-[Paste company.md content here]
 
 Feature idea: <describe your idea>
 ```
@@ -100,14 +94,11 @@ Feature idea: <describe your idea>
 
 Reads a PRD and creates a Jira Epic with INVEST-compliant stories.
 
-**Context to include:**
-- [`skills/prd-to-backlog/context/tech-stack.md`](skills/prd-to-backlog/context/tech-stack.md) — platform architecture, plugins, and constraints
+**Bundled context:** [`skills/prd-to-backlog/context/tech-stack.md`](skills/prd-to-backlog/context/tech-stack.md) — platform architecture, plugins, and constraints. Included automatically via the `.skill` file.
 
 **How to invoke (Claude Code):**
 ```
 /prd-to-backlog
-
-[Paste tech-stack.md content here]
 
 PRD: <link to Confluence page, or paste PRD content>
 ```
@@ -120,14 +111,11 @@ PRD: <link to Confluence page, or paste PRD content>
 
 Implements a single Jira story end-to-end: branch, code, PR, and Jira status updates.
 
-**Context to include:**
-- [`skills/story-implementation/context/tech-stack.md`](skills/story-implementation/context/tech-stack.md) — stack, plugins, and development constraints
+**Bundled context:** [`skills/story-implementation/context/tech-stack.md`](skills/story-implementation/context/tech-stack.md) — stack, plugins, and development constraints. Included automatically via the `.skill` file.
 
 **How to invoke (Claude Code):**
 ```
 /story-implementation
-
-[Paste tech-stack.md content here]
 
 Story: <Jira issue key or link, e.g. VLM-42>
 ```
@@ -142,9 +130,9 @@ Two workflows automate the post-merge delivery loop. No manual steps required af
 
 ### [`deploy.yml`](.github/workflows/deploy.yml) — Deploy to Production
 
-Triggers on push to `main`. Connects to the production server via SSH and pulls the latest code.
+Triggers on push to `main`. This workflow is a **sample placeholder** — replace the deploy step with your own target (SSH, cloud provider, container registry, etc.).
 
-Required secrets: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`
+> No secrets are required by the sample. Add the secrets your own deployment method needs.
 
 ### [`release-changelog.yml`](.github/workflows/release-changelog.yml) — Close Jira + Create Release
 
