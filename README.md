@@ -52,13 +52,27 @@ Add the following in **Repository → Settings → Secrets and variables → Act
 
 ## Skills
 
-Skills are instruction files that guide Claude through each pipeline step. Each skill is available as a Claude Code slash command (loaded from `.claude/commands/`) and as a human-readable reference (in `skills/`).
+Skills are packaged Claude instructions that guide Claude through each pipeline step. They are distributed as `.skill` files and, once installed, trigger automatically when Claude recognises the context.
+
+### Installation
+
+Each skill is pre-packaged in the [`dist/`](dist/) folder. To install:
+
+1. Clone this repo
+2. Open any `.skill` file in Claude Code:
+   - [`dist/create-prd.skill`](dist/create-prd.skill)
+   - [`dist/prd-to-backlog.skill`](dist/prd-to-backlog.skill)
+   - [`dist/story-implementation.skill`](dist/story-implementation.skill)
+3. Claude Code will prompt you to install — confirm and the skill is ready
+
+The context files (`company.md`, `tech-stack.md`) are bundled inside each `.skill` file — no need to paste them manually.
+
+> The `skills/` directory contains the skill source files and `dist/` the packaged output. If you modify a skill source, re-package it with the [skill-creator](https://claude.com/plugins) and replace the file in `dist/`.
 
 ### Prerequisites for each session
 
 1. Ensure the Atlassian and GitHub MCP connectors are active
-2. Open this project in Claude Code (so slash commands are available)
-3. Include the relevant context files listed under each skill (paste content or attach file)
+2. Skills trigger automatically — or invoke them explicitly as shown below
 
 ---
 
