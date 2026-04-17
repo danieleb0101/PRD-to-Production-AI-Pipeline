@@ -1,13 +1,13 @@
-# PRD-to-Production-Pipeline
+# PRD-to-Production AI Pipeline
 
 **An AI-powered delivery pipeline that takes a product idea to production in minutes.** *No code required.*
 <img width="375" alt="Image" align="right" src="https://github.com/user-attachments/assets/aacef9c1-9acd-4683-b7ec-09d6fdfdf220" />
 
 Fully automated through **Claude** orchestration:
-- **Product Requirements Doc (PRD) creation in Confluence** (`create-prd` skill)
-- **Jira stories generation** (`prd-to-backlog` skill)
-- **Story implementation and status tracking** (`story-implementation` skill)
-- **Release and changelog generation** (GitHub Actions)
+- **Product Requirements Doc (PRD) creation in Confluence** (`create-prd` *skill*)
+- **Jira stories generation** (`prd-to-backlog` *skill*)
+- **Story implementation and status tracking** (`story-implementation` *skill*)
+- **Release and changelog generation** (*GitHub Actions*)
 
 ## Pipeline Overview
 
