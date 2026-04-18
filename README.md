@@ -73,10 +73,20 @@ The context files (`company.md`, `tech-stack.md`) are bundled inside each `.skil
 
 > The `skills/` directory contains the skill source files and `dist/` the packaged output. If you modify a skill source, re-package it with the [skill-creator](https://claude.com/plugins) and replace the file in `dist/`.
 
+### Slash Commands
+
+Each skill is also available as a project-level slash command in Claude Code. Invoking `/<skill-name>` (e.g. `/create-prd`) delegates directly to the corresponding `anthropic-skills` skill — no manual skill invocation needed.
+
+| Command | Delegates to |
+|---|---|
+| `/create-prd` | `anthropic-skills:create-prd` |
+| `/prd-to-backlog` | `anthropic-skills:prd-to-backlog` |
+| `/story-implementation` | `anthropic-skills:story-implementation` |
+
 ### Prerequisites for each session
 
 1. Ensure the Atlassian and GitHub MCP connectors are active
-2. Skills trigger automatically — or invoke them explicitly as shown below
+2. Skills trigger automatically — or invoke them explicitly via slash commands as shown below
 
 ---
 
