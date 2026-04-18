@@ -1,22 +1,25 @@
 # PRD-to-Production AI Pipeline
 
-**An AI-powered delivery pipeline that takes a product idea to production in minutes.** *No code required.*
+**An AI-orchestrated delivery pipeline that fully automates every step, from product idea to production, in minutes.** <br>*No coding required.*
 <img width="375" alt="Image" align="right" src="https://github.com/user-attachments/assets/aacef9c1-9acd-4683-b7ec-09d6fdfdf220" />
 
-Fully automated through **Claude** orchestration:
+End-to-end automation with **Claude**:
 - **Product Requirements Doc (PRD) creation in Confluence** (`create-prd` *skill*)
 - **Jira stories generation** (`prd-to-backlog` *skill*)
 - **Story implementation and status tracking** (`story-implementation` *skill*)
 - **Release and changelog generation** (*GitHub Actions*)
+
+## Demo
+https://github.com/user-attachments/assets/ffb81f30-6781-42d0-a7f7-3e2b08981cfe
 
 ## Pipeline Overview
 
 ```
 Product Idea
     ↓
-[1] create-prd          → Structured PRD saved to Confluence
+[1] create-prd          → Creation of a structured PRD in Confluence
     ↓
-[2] prd-to-backlog      → Epic + Stories created in Jira
+[2] prd-to-backlog      → Epic + Stories creation in Jira
     ↓
 [3] story-implementation → Code committed, PR opened, Jira updated
     ↓
@@ -24,34 +27,6 @@ Product Idea
     ↓
 GitHub Actions          → Deploy to production, close Jira story, create release
 ```
-
----
-
-## Requirements
-
-### Claude Plugins (MCP Connectors)
-
-Install from the [Claude Plugins Marketplace](https://claude.com/plugins):
-
-- **Atlassian** — required for Confluence and Jira integration
-- **GitHub** — required for PR creation and branch management
-
-### External Services
-
-- Jira project — hosts the backlog and tracks story status
-- Confluence space — stores PRDs
-- GitHub repository — hosts code and runs Actions
-
-### GitHub Secrets
-
-Add the following in **Repository → Settings → Secrets and variables → Actions**:
-
-| Name | Description |
-|---|---|
-| `JIRA_BASE_URL` | e.g. `https://yourcompany.atlassian.net` |
-| `JIRA_EMAIL` | Jira account email |
-| `JIRA_API_TOKEN` | Jira API token ([generate here](https://id.atlassian.com/manage-profile/security/api-tokens)) |
-
 ---
 
 ## Skills
@@ -88,9 +63,9 @@ Each skill is also available as a project-level slash command in Claude Code. In
 1. Ensure the Atlassian and GitHub MCP connectors are active
 2. Skills trigger automatically — or invoke them explicitly via slash commands as shown below
 
----
+## Pipeline
 
-### 1. `create-prd`
+### Step 1: `create-prd`
 
 Turns a raw product idea into a structured PRD and saves it to Confluence.
 
@@ -105,9 +80,7 @@ Feature idea: <describe your idea>
 
 **Output:** Structured PRD saved as a Confluence page, ready for `prd-to-backlog`.
 
----
-
-### 2. `prd-to-backlog`
+### Step 2: `prd-to-backlog`
 
 Reads a PRD and creates a Jira Epic with INVEST-compliant stories.
 
@@ -122,9 +95,7 @@ PRD: <link to Confluence page, or paste PRD content>
 
 **Output:** 1 Epic + scoped stories created in Jira, ready for sprint planning.
 
----
-
-### 3. `story-implementation`
+### Step 3: `story-implementation`
 
 Implements a single Jira story end-to-end: branch, code, PR, and Jira status updates.
 
@@ -139,19 +110,17 @@ Story: <Jira issue key or link, e.g. VLM-42>
 
 **Output:** PR opened on GitHub, Jira story moved to In Review.
 
----
-
-## GitHub Actions
+### Step 4: GitHub Actions
 
 Two workflows automate the post-merge delivery loop. No manual steps required after merging a PR.
 
-### [`deploy.yml`](.github/workflows/deploy.yml) — Deploy to Production
+#### [`deploy.yml`](.github/workflows/deploy.yml) — Deploy to Production
 
 Triggers on push to `main`. This workflow is a **sample placeholder** — replace the deploy step with your own target (SSH, cloud provider, container registry, etc.).
 
 > No secrets are required by the sample. Add the secrets your own deployment method needs.
 
-### [`release-changelog.yml`](.github/workflows/release-changelog.yml) — Close Jira + Create Release
+#### [`release-changelog.yml`](.github/workflows/release-changelog.yml) — Close Jira + Create Release
 
 Triggers automatically after a successful deployment. For each merged PR it:
 
@@ -165,6 +134,33 @@ Required secrets: `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`
 See [`.github/workflows/README.md`](.github/workflows/README.md) for full documentation.
 
 > **Branch naming requirement:** Branches must include the Jira issue key, e.g. `VLM-2-add-login` or `feature/VLM-2-add-login`. The release workflow uses this to link deployments back to Jira.
+
+---
+
+## Requirements
+
+### Claude Plugins (MCP Connectors)
+
+Install from the [Claude Plugins Marketplace](https://claude.com/plugins):
+
+- **Atlassian** — required for Confluence and Jira integration
+- **GitHub** — required for PR creation and branch management
+
+### External Services
+
+- Jira project — hosts the backlog and tracks story status
+- Confluence space — stores PRDs
+- GitHub repository — hosts code and runs Actions
+
+### GitHub Secrets
+
+Add the following in **Repository → Settings → Secrets and variables → Actions**:
+
+| Name | Description |
+|---|---|
+| `JIRA_BASE_URL` | e.g. `https://yourcompany.atlassian.net` |
+| `JIRA_EMAIL` | Jira account email |
+| `JIRA_API_TOKEN` | Jira API token ([generate here](https://id.atlassian.com/manage-profile/security/api-tokens)) |
 
 ---
 
