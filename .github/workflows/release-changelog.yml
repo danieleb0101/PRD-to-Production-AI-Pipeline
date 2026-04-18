@@ -40,13 +40,13 @@ jobs:
           PRS_JSON=$(curl --silent --show-error --fail \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GH_TOKEN" \
-            "https://api.github.com/repos/$REPO/commits/$SHA/pulls")
+            "https://api.github.com/repos/$REPO/pulls?state=closed&base=main&sort=updated&direction=desc&per_page=20")
 
-          PR_NUMBER=$(echo "$PRS_JSON" | jq -r 'max_by(.number) | .number')
-          PR_BRANCH=$(echo "$PRS_JSON" | jq -r 'max_by(.number) | .head.ref')
+          PR_NUMBER=$(echo "$PRS_JSON" | jq -r --arg sha "$SHA" '.[] | select(.merge_commit_sha == $sha) | .number' | head -n 1)
+          PR_BRANCH=$(echo "$PRS_JSON" | jq -r --arg sha "$SHA" '.[] | select(.merge_commit_sha == $sha) | .head.ref' | head -n 1)
 
           if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
-            echo "No PR associated with commit $SHA — skipping PR-dependent steps"
+            echo "No merged PR found for commit $SHA — skipping PR-dependent steps"
             echo "found=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
