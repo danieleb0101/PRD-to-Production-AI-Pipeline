@@ -37,15 +37,30 @@ jobs:
           SHA: ${{ steps.sha.outputs.sha }}
         shell: bash
         run: |
-          PRS_JSON=$(curl --silent --show-error --fail \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            "https://api.github.com/repos/$REPO/pulls?state=closed&base=main&sort=updated&direction=desc&per_page=20")
+          OWNER="${REPO%/*}"
+          REPO_NAME="${REPO#*/}"
 
-          PR_NUMBER=$(echo "$PRS_JSON" | jq -r --arg sha "$SHA" '.[] | select(.merge_commit_sha == $sha) | .number' | head -n 1)
-          PR_BRANCH=$(echo "$PRS_JSON" | jq -r --arg sha "$SHA" '.[] | select(.merge_commit_sha == $sha) | .head.ref' | head -n 1)
+          PR_JSON=$(gh api graphql \
+            -f query='query($owner:String!, $repo:String!, $sha:String!) {
+              repository(owner:$owner, name:$repo) {
+                object(expression:$sha) {
+                  ... on Commit {
+                    associatedPullRequests(first:1) {
+                      nodes { number headRefName merged }
+                    }
+                  }
+                }
+              }
+            }' \
+            -f owner="$OWNER" \
+            -f repo="$REPO_NAME" \
+            -f sha="$SHA")
 
-          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
+          MERGED=$(echo "$PR_JSON" | jq -r '.data.repository.object.associatedPullRequests.nodes[0].merged')
+          PR_NUMBER=$(echo "$PR_JSON" | jq -r '.data.repository.object.associatedPullRequests.nodes[0].number')
+          PR_BRANCH=$(echo "$PR_JSON" | jq -r '.data.repository.object.associatedPullRequests.nodes[0].headRefName')
+
+          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ] || [ "$MERGED" != "true" ]; then
             echo "No merged PR found for commit $SHA — skipping PR-dependent steps"
             echo "found=false" >> "$GITHUB_OUTPUT"
             exit 0
