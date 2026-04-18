@@ -46,16 +46,18 @@ jobs:
           PR_BRANCH=$(echo "$PRS_JSON" | jq -r 'max_by(.number) | .head.ref')
 
           if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
-            echo "No PR associated with commit $SHA"
-            echo "$PRS_JSON"
-            exit 1
+            echo "No PR associated with commit $SHA — skipping PR-dependent steps"
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
 
+          echo "found=true" >> "$GITHUB_OUTPUT"
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
           echo "pr_branch=$PR_BRANCH" >> "$GITHUB_OUTPUT"
 
       - name: Extract Jira key from PR branch
         id: extract_jira
+        if: steps.pr_from_commit.outputs.found == 'true'
         shell: bash
         run: |
           BRANCH="${{ steps.pr_from_commit.outputs.pr_branch }}"
@@ -70,6 +72,7 @@ jobs:
 
       - name: Read Jira issue status
         id: jira_status
+        if: steps.pr_from_commit.outputs.found == 'true'
         env:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
@@ -90,7 +93,7 @@ jobs:
           echo "status_category=$STATUS_CATEGORY" >> "$GITHUB_OUTPUT"
 
       - name: Get available Jira transitions
-        if: ${{ steps.jira_status.outputs.status_category != 'done' }}
+        if: steps.pr_from_commit.outputs.found == 'true' && steps.jira_status.outputs.status_category != 'done'
         id: transitions
         env:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
@@ -125,7 +128,7 @@ jobs:
           echo "transition_id=$TRANSITION_ID" >> "$GITHUB_OUTPUT"
 
       - name: Transition Jira issue
-        if: ${{ steps.jira_status.outputs.status_category != 'done' }}
+        if: steps.pr_from_commit.outputs.found == 'true' && steps.jira_status.outputs.status_category != 'done'
         env:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
@@ -148,6 +151,7 @@ jobs:
 
       - name: Build Jira URL
         id: jira_url
+        if: steps.pr_from_commit.outputs.found == 'true'
         env:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
           ISSUE_KEY: ${{ steps.extract_jira.outputs.issue_key }}
@@ -156,6 +160,7 @@ jobs:
           echo "url=$JIRA_BASE_URL/browse/$ISSUE_KEY" >> "$GITHUB_OUTPUT"
 
       - name: Comment on PR
+        if: steps.pr_from_commit.outputs.found == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
