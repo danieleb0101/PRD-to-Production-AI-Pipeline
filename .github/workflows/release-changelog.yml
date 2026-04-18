@@ -37,25 +37,42 @@ jobs:
           SHA: ${{ steps.sha.outputs.sha }}
         shell: bash
         run: |
-          PRS_JSON=$(curl --silent --show-error --fail \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            "https://api.github.com/repos/$REPO/commits/$SHA/pulls")
+          OWNER="${REPO%/*}"
+          REPO_NAME="${REPO#*/}"
 
-          PR_NUMBER=$(echo "$PRS_JSON" | jq -r 'max_by(.number) | .number')
-          PR_BRANCH=$(echo "$PRS_JSON" | jq -r 'max_by(.number) | .head.ref')
+          PR_JSON=$(gh api graphql \
+            -f query='query($owner:String!, $repo:String!, $sha:String!) {
+              repository(owner:$owner, name:$repo) {
+                object(expression:$sha) {
+                  ... on Commit {
+                    associatedPullRequests(first:1) {
+                      nodes { number headRefName merged }
+                    }
+                  }
+                }
+              }
+            }' \
+            -f owner="$OWNER" \
+            -f repo="$REPO_NAME" \
+            -f sha="$SHA")
 
-          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
-            echo "No PR associated with commit $SHA"
-            echo "$PRS_JSON"
-            exit 1
+          MERGED=$(echo "$PR_JSON" | jq -r '.data.repository.object.associatedPullRequests.nodes[0].merged')
+          PR_NUMBER=$(echo "$PR_JSON" | jq -r '.data.repository.object.associatedPullRequests.nodes[0].number')
+          PR_BRANCH=$(echo "$PR_JSON" | jq -r '.data.repository.object.associatedPullRequests.nodes[0].headRefName')
+
+          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ] || [ "$MERGED" != "true" ]; then
+            echo "No merged PR found for commit $SHA — skipping PR-dependent steps"
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
 
+          echo "found=true" >> "$GITHUB_OUTPUT"
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
           echo "pr_branch=$PR_BRANCH" >> "$GITHUB_OUTPUT"
 
       - name: Extract Jira key from PR branch
         id: extract_jira
+        if: steps.pr_from_commit.outputs.found == 'true'
         shell: bash
         run: |
           BRANCH="${{ steps.pr_from_commit.outputs.pr_branch }}"
@@ -70,6 +87,7 @@ jobs:
 
       - name: Read Jira issue status
         id: jira_status
+        if: steps.pr_from_commit.outputs.found == 'true'
         env:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
@@ -90,7 +108,7 @@ jobs:
           echo "status_category=$STATUS_CATEGORY" >> "$GITHUB_OUTPUT"
 
       - name: Get available Jira transitions
-        if: ${{ steps.jira_status.outputs.status_category != 'done' }}
+        if: steps.pr_from_commit.outputs.found == 'true' && steps.jira_status.outputs.status_category != 'done'
         id: transitions
         env:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
@@ -125,7 +143,7 @@ jobs:
           echo "transition_id=$TRANSITION_ID" >> "$GITHUB_OUTPUT"
 
       - name: Transition Jira issue
-        if: ${{ steps.jira_status.outputs.status_category != 'done' }}
+        if: steps.pr_from_commit.outputs.found == 'true' && steps.jira_status.outputs.status_category != 'done'
         env:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
@@ -148,6 +166,7 @@ jobs:
 
       - name: Build Jira URL
         id: jira_url
+        if: steps.pr_from_commit.outputs.found == 'true'
         env:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
           ISSUE_KEY: ${{ steps.extract_jira.outputs.issue_key }}
@@ -156,6 +175,7 @@ jobs:
           echo "url=$JIRA_BASE_URL/browse/$ISSUE_KEY" >> "$GITHUB_OUTPUT"
 
       - name: Comment on PR
+        if: steps.pr_from_commit.outputs.found == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
